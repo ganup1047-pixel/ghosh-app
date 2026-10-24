@@ -1,0 +1,56 @@
+name: Build Ghosh g APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Generate App Files
+        run: |
+          mkdir -p app/src/main/java/com/ghoshg/app
+          mkdir -p app/src/main/res/values
+
+          echo 'org.gradle.jvmargs=-Xmx3072m -Dfile.encoding=UTF-8' > gradle.properties
+          echo 'android.useAndroidX=true' >> gradle.properties
+
+          echo 'rootProject.name = "Ghosh g"' > settings.gradle.kts
+          echo 'include(":app")' >> settings.gradle.kts
+
+          echo 'plugins { id("com.android.application") version "8.7.2" apply false; id("org.jetbrains.kotlin.android") version "2.0.21" apply false; id("org.jetbrains.kotlin.plugin.compose") version "2.0.21" apply false }' > build.gradle.kts
+
+          echo 'plugins { id("com.android.application"); id("org.jetbrains.kotlin.android"); id("org.jetbrains.kotlin.plugin.compose") }' > app/build.gradle.kts
+          echo 'android { namespace = "com.ghoshg.app"; compileSdk = 35; defaultConfig { applicationId = "com.ghoshg.app"; minSdk = 26; targetSdk = 35; versionCode = 1; versionName = "1.0.0" } }' >> app/build.gradle.kts
+          echo 'dependencies { implementation("androidx.core:core-ktx:1.15.0"); implementation("androidx.activity:activity-compose:1.9.3"); implementation(platform("androidx.compose:compose-bom:2024.11.00")); implementation("androidx.compose.ui:ui"); implementation("androidx.compose.material3:material3"); implementation("androidx.navigation:navigation-compose:2.8.4") }' >> app/build.gradle.kts
+
+          echo '<?xml version="1.0" encoding="utf-8"?><manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:label="Ghosh g" android:theme="@style/Theme.GhoshG"><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter></activity></application></manifest>' > app/src/main/AndroidManifest.xml
+          echo '<resources><style name="Theme.GhoshG" parent="android:Theme.Material.NoActionBar" /></resources>' > app/src/main/res/values/themes.xml
+
+          echo 'package com.ghoshg.app' > app/src/main/java/com/ghoshg/app/MainActivity.kt
+          echo 'import android.os.Bundle; import androidx.activity.ComponentActivity; import androidx.activity.compose.setContent; import androidx.compose.material3.Surface; import androidx.compose.material3.Text; import androidx.compose.foundation.layout.Box; import androidx.compose.foundation.layout.fillMaxSize; import androidx.compose.ui.Alignment; import androidx.compose.ui.Modifier' >> app/src/main/java/com/ghoshg/app/MainActivity.kt
+          echo 'class MainActivity : ComponentActivity() { override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContent { Surface(modifier = Modifier.fillMaxSize()) { Box(contentAlignment = Alignment.Center) { Text("Ghosh g - Skill Competition Project") } } } } }' >> app/src/main/java/com/ghoshg/app/MainActivity.kt
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build Debug APK
+        run: gradle assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ghosh-g-App
+          path: app/build/outputs/apk/debug/app-debug.apk
+          
